@@ -7,8 +7,10 @@
 <body>
     {% include 'navbar.html' %}
     {% include 'banner.html' %}
-    <h1 class="text-center mt-2 mb-4">{{company_name}} Careers</h1>
     <div class="container-fluid ps-5 pe-5">
+        <h1 class="text-center mt-2 mb-4">
+            {{company_name}} Careers
+        </h1>
         <h3>{{job.title}}</h3>
         <p class="lead">{{job.location}}</p>
         <h4>Responsibilities</h4>
@@ -25,6 +27,7 @@
         </ol>
         <h4>Salary</h4>
         <p>{{job.currency}}{{job.salary}}</p>
+        {% include 'application_form.html' %}
     </div>
     {% include 'footer.html' %}
 </body>
