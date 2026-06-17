@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Phi Careers - Next-Gen Tech Recruitment Platform{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <h1 class="hero-title">Your Next Career Milestone Starts Here</h1>
+    <p class="hero-subtitle">
+        Phi Careers is a streamlined, premium recruitment platform built to connect top-tier tech talent with forward-thinking employers. Explore roles without friction.
+    </p>
+    <div class="hero-ctas">
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">
+                Go to Dashboard
+            </a>
+        {% else %}
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">
+                Get Started
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary" style="padding: 0.8rem 2rem; font-size: 1rem;">
+                Explore Jobs
+            </a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Feature Section -->
+<section class="feature-section">
+    <div class="section-title" style="justify-content: center; font-size: 1.5rem; margin-bottom: 2rem;">
+        <span>Why Choose Phi Careers?</span>
+    </div>
+    
+    <div class="feature-grid">
+        <!-- Pillar 1: Progressive Disclosure -->
+        <div class="feature-card">
+            <span class="feature-icon">🔍</span>
+            <h3>Progressive Disclosure Feed</h3>
+            <p>
+                Browse clean, scannable job cards without visual noise. Reveal comprehensive descriptions, salaries, and locations via fluid modal overlays only when interested.
+            </p>
+        </div>
+        
+        <!-- Pillar 2: Frictionless Forms -->
+        <div class="feature-card">
+            <span class="feature-icon">⚡</span>
+            <h3>Frictionless Form Filling</h3>
+            <p>
+                Profile details, names, and contact emails are automatically pre-populated in your application fields. Complete applications or save partial drafts in two clicks.
+            </p>
+        </div>
+        
+        <!-- Pillar 3: Visual Pipeline -->
+        <div class="feature-card">
+            <span class="feature-icon">📊</span>
+            <h3>Visual Pipeline Tracking</h3>
+            <p>
+                Stay updated throughout the recruitment process. Monitor your applications live as they progress from draft to reviewed, hired, or rejected.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="stats-grid">
+        <div class="stat-item">
+            <h2>100%</h2>
+            <p>SDLC Compliant Architecture</p>
+        </div>
+        <div class="stat-item">
+            <h2>3NF</h2>
+            <p>Normalized Relational Database</p>
+        </div>
+        <div class="stat-item">
+            <h2>15+</h2>
+            <p>Systematic QA Bugs Resolved</p>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Banner -->
+<section class="cta-banner">
+    <h2>Ready to Take the Next Step?</h2>
+    <p>Join the next-generation recruitment platform today as a candidate looking for a dream role, or as an employer looking for exceptional tech talent.</p>
+    {% if session.get('user_id') %}
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary" style="padding: 0.75rem 2.5rem; font-size: 0.95rem;">
+            Enter Candidate Dashboard
+        </a>
+    {% else %}
+        <div style="display: inline-flex; gap: 1rem; justify-content: center; width: 100%;">
+            <a href="{{ url_for('auth.register') }}?role=candidate" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 0.95rem;">
+                Join as Candidate
+            </a>
+            <a href="{{ url_for('auth.register') }}?role=employer" class="btn btn-secondary" style="padding: 0.75rem 2rem; font-size: 0.95rem;">
+                Join as Employer
+            </a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

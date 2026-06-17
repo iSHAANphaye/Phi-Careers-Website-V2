@@ -16,9 +16,7 @@ app.register_blueprint(auth_bp, url_prefix='/auth')
 
 @app.route('/')
 def index():
-    if 'user_id' in session:
-        return redirect(url_for('dashboard'))
-    return redirect(url_for('auth.login'))
+    return render_template('index.html')
 
 @app.route('/dashboard')
 @login_required
