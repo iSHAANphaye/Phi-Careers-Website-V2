@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Phi Careers - Find Your Next Role{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- Glass Navbar -->
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">Phi Careers</a>
+        <div class="navbar-menu">
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('dashboard') }}" class="navbar-item">Dashboard</a>
+                <div class="navbar-user">
+                    <span class="navbar-item" style="color: var(--text-primary); font-weight: 600;">
+                        {{ session.get('name') }}
+                    </span>
+                    {% if session.get('role') == 'candidate' %}
+                        <span class="badge badge-candidate">Candidate</span>
+                    {% else %}
+                        <span class="badge badge-employer">Employer</span>
+                    {% endif %}
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                    Log Out
+                </a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="navbar-item">Log In</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.85rem;">
+                    Sign Up
+                </a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Flask Flashed Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="alert alert-{{ category }}">
+                            {{ message }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Child Page Content -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Scripts Block -->
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>

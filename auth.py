@@ -1,4 +1,4 @@
-from flask import Blueprint, request, redirect, url_for, render_template_string, session, flash
+from flask import Blueprint, request, redirect, url_for, render_template, session, flash
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 import db_helper
@@ -67,62 +67,7 @@ def register():
             flash("An error occurred during registration. Please try again.", "error")
             print(f"Registration Error: {e}")
             
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Phi Careers - Register</title>
-        <style>
-            body { font-family: Arial, sans-serif; background-color: #f8fafc; color: #334155; padding: 50px; }
-            .card { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-            h2 { color: #0f172a; margin-top: 0; }
-            .form-group { margin-bottom: 15px; }
-            label { display: block; margin-bottom: 5px; font-weight: bold; }
-            input, select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
-            button { background-color: #2563eb; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; font-size: 16px; }
-            button:hover { background-color: #1d4ed8; }
-            .alert { padding: 10px; border-radius: 4px; margin-bottom: 15px; }
-            .alert-error { background-color: #fee2e2; color: #991b1b; }
-            .alert-success { background-color: #dcfce7; color: #166534; }
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h2>Sign Up</h2>
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            <form method="POST">
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" name="password" required>
-                </div>
-                <div class="form-group">
-                    <label>Role</label>
-                    <select name="role">
-                        <option value="candidate">Candidate</option>
-                        <option value="employer">Employer</option>
-                    </select>
-                </div>
-                <button type="submit">Register</button>
-            </form>
-            <p style="margin-top: 15px; text-align: center;">Already have an account? <a href="{{ url_for('auth.login') }}">Log In</a></p>
-        </div>
-    </body>
-    </html>
-    """)
+    return render_template('auth/register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -147,51 +92,7 @@ def login():
         else:
             flash("Invalid email or password.", "error")
             
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Phi Careers - Login</title>
-        <style>
-            body { font-family: Arial, sans-serif; background-color: #f8fafc; color: #334155; padding: 50px; }
-            .card { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-            h2 { color: #0f172a; margin-top: 0; }
-            .form-group { margin-bottom: 15px; }
-            label { display: block; margin-bottom: 5px; font-weight: bold; }
-            input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
-            button { background-color: #2563eb; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; font-size: 16px; }
-            button:hover { background-color: #1d4ed8; }
-            .alert { padding: 10px; border-radius: 4px; margin-bottom: 15px; }
-            .alert-error { background-color: #fee2e2; color: #991b1b; }
-            .alert-success { background-color: #dcfce7; color: #166534; }
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h2>Log In</h2>
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            <form method="POST">
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" name="password" required>
-                </div>
-                <button type="submit">Log In</button>
-            </form>
-            <p style="margin-top: 15px; text-align: center;">Don't have an account? <a href="{{ url_for('auth.register') }}">Sign Up</a></p>
-        </div>
-    </body>
-    </html>
-    """)
+    return render_template('auth/login.html')
 
 @auth_bp.route('/logout')
 def logout():

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Employer Portal - Phi Careers{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    
+    <!-- Left Column: Manage Listings and New Job Post Form -->
+    <div>
+        <div class="section-title">
+            <span>Your Active Job Listings</span>
+        </div>
+        
+        <div class="job-feed" style="margin-bottom: 2rem;">
+            {% if jobs %}
+                {% for job in jobs %}
+                    <div class="card">
+                        <div class="job-card-header">
+                            <div>
+                                <h3 class="job-title">{{ job.title }}</h3>
+                                <div class="job-meta">
+                                    <span>📍 {{ job.location }}</span>
+                                    <span>💰 ${{ "{:,.2f}".format(job.salary) }}</span>
+                                </div>
+                            </div>
+                            <span class="badge badge-candidate" style="background: rgba(99, 102, 241, 0.1); color: var(--accent-indigo); border-color: rgba(99, 102, 241, 0.2);">
+                                {{ job.status | capitalize }}
+                            </span>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.75rem; white-space: pre-line;">
+                            {{ job.description[:200] }}{% if job.description | length > 200 %}...{% endif %}
+                        </p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                    <p>No jobs posted yet. Use the form on the right to post your first position!</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="section-title">
+            <span>Active Candidate Applications</span>
+        </div>
+        
+        <div class="card" style="overflow-x: auto; padding: 0;">
+            {% if applications %}
+                <table class="app-table">
+                    <thead>
+                        <tr>
+                            <th>Candidate</th>
+                            <th>Role Applied</th>
+                            <th>Applied Date</th>
+                            <th>Status</th>
+                            <th>Documents</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in applications %}
+                            {% if app.status != 'draft' %} <!-- Do not show drafts to employers -->
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 600;">{{ app.candidate_name }}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ app.candidate_email }}</div>
+                                    </td>
+                                    <td>{{ app.job_title }}</td>
+                                    <td style="font-size: 0.8rem; color: var(--text-secondary);">
+                                        {{ app.updated_at.strftime('%Y-%m-%d') if app.updated_at else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        <span class="pipeline-status status-{{ app.status }}" style="font-size: 0.7rem;">
+                                            {{ app.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                            <a href="{{ app.resume_url }}" target="_blank" style="color: var(--accent-indigo); text-decoration: none; font-size: 0.8rem; font-weight: 500;">
+                                                📄 Resume
+                                            </a>
+                                            <span onclick="alert('Cover Letter:\n\n' + {{ app.cover_letter | tojson }})" style="color: var(--accent-purple); cursor: pointer; font-size: 0.8rem; font-weight: 500;">
+                                                ✉️ Cover Letter
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <form method="POST" action="/applications/{{ app.application_id }}/status" style="display: inline-flex; gap: 0.4rem;">
+                                            {% if app.status == 'applied' %}
+                                                <button type="submit" name="status" value="reviewed" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: var(--info); box-shadow: none;">
+                                                    Review
+                                                </button>
+                                                <button type="submit" name="status" value="rejected" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+                                                    Reject
+                                                </button>
+                                            {% elif app.status == 'reviewed' %}
+                                                <button type="submit" name="status" value="hired" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: var(--success); box-shadow: none;">
+                                                    Hire
+                                                </button>
+                                                <button type="submit" name="status" value="rejected" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+                                                    Reject
+                                                </button>
+                                            {% else %}
+                                                <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">
+                                                    Completed
+                                                </span>
+                                            {% endif %}
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p style="color: var(--text-secondary); text-align: center; font-size: 0.9rem; padding: 2rem 0;">
+                    No applications received yet.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column: Create New Job Listing -->
+    <div>
+        <div class="section-title">
+            <span>Post a New Role</span>
+        </div>
+        
+        <div class="card">
+            <form method="POST" action="/jobs/create">
+                <div class="form-group">
+                    <label for="title">Job Title</label>
+                    <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Senior Software Engineer" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <input type="text" id="location" name="location" class="form-control" placeholder="e.g. Chicago, IL or Remote" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="salary">Annual Salary ($)</label>
+                        <input type="number" id="salary" name="salary" class="form-control" placeholder="e.g. 120000" min="0" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Job Description</label>
+                    <textarea id="description" name="description" class="form-control" rows="8" placeholder="Outline job responsibilities, tech stack, and ideal requirements..." required></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                    🚀 Publish Listing
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

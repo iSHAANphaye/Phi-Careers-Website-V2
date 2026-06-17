@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Candidate Portal - Phi Careers{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    
+    <!-- Left Column: Search Jobs and Progressive Disclosure Feed -->
+    <div>
+        <div class="section-title">
+            <span>Explore Opportunities</span>
+            <input type="text" id="jobSearch" class="form-control" placeholder="Search by title, company, or location..." style="max-width: 300px; padding: 0.5rem 0.75rem; font-size: 0.85rem;">
+        </div>
+
+        <div class="job-feed" id="jobFeed">
+            {% if jobs %}
+                {% for job in jobs %}
+                    <div class="card card-hover job-card" onclick="openJobDetails({{ job.job_id }}, '{{ job.title | escape }}', '{{ job.company_name | escape }}', '{{ job.location | escape }}', '{{ job.salary | escape }}', '{{ job.description | replace('\r\n', '\\n') | replace('\n', '\\n') | escape }}', '{{ job.draft_cover_letter | escape }}', {{ job.draft_step or 1 }})">
+                        <div class="job-card-header">
+                            <div>
+                                <h3 class="job-title">{{ job.title }}</h3>
+                                <div class="job-company">{{ job.company_name }}</div>
+                            </div>
+                            <span class="badge badge-candidate" style="background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: rgba(16, 185, 129, 0.2);">
+                                Open
+                            </span>
+                        </div>
+                        <div class="job-meta">
+                            <span class="job-location">📍 {{ job.location }}</span>
+                            <span>💰 ${{ "{:,.2f}".format(job.salary) }}</span>
+                        </div>
+                        
+                        <!-- Brief description summary for scannability -->
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.75rem;">
+                            {{ job.description[:150] }}{% if job.description | length > 150 %}...{% endif %}
+                        </p>
+                        
+                        <div style="margin-top: 1rem; text-align: right;">
+                            <span class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; pointer-events: none;">
+                                View Details & Apply
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card" style="text-align: center; color: var(--text-secondary); padding: 3rem;">
+                    <p>No active job listings found. Check back later!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column: Visual Application Tracking Pipeline -->
+    <div>
+        <div class="section-title">
+            <span>My Applications</span>
+        </div>
+        
+        <div class="card">
+            {% if applications %}
+                <div class="pipeline-list">
+                    {% for app in applications %}
+                        <div class="pipeline-item">
+                            <div class="pipeline-info">
+                                <h4>{{ app.job_title }}</h4>
+                                <p>{{ app.company_name }}</p>
+                                <p style="font-size: 0.7rem; margin-top: 0.25rem;">
+                                    Applied: {{ app.updated_at.strftime('%Y-%m-%d') if app.updated_at else 'N/A' }}
+                                </p>
+                            </div>
+                            
+                            <!-- Visual Status Badges matching our DDL status -->
+                            <span class="pipeline-status status-{{ app.status }}">
+                                {{ app.status }}
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="color: var(--text-secondary); text-align: center; font-size: 0.9rem; padding: 1rem 0;">
+                    You haven't started any applications yet. Explore active roles on the left to get started!
+                </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Progressive Disclosure: Job Details & Frictionless Form Modal -->
+<div class="modal" id="jobModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeJobModal()">&times;</button>
+        
+        <h2 id="modalTitle" style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;"></h2>
+        <div id="modalCompany" style="color: var(--accent-indigo); font-weight: 600; font-size: 0.95rem; margin-bottom: 1rem;"></div>
+        
+        <!-- Job Stats row -->
+        <div class="job-meta" style="margin-bottom: 1.5rem; background: rgba(255, 255, 255, 0.02); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+            <span id="modalLocation"></span>
+            <span id="modalSalary"></span>
+        </div>
+        
+        <div class="section-title" style="font-size: 1.05rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem; margin-bottom: 0.75rem;">
+            <span>Job Description</span>
+        </div>
+        <p id="modalDesc" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap; margin-bottom: 2rem;"></p>
+        
+        <!-- Frictionless Multi-step Form -->
+        <div class="section-title" style="font-size: 1.05rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem; margin-bottom: 1rem;">
+            <span id="formTitle">Apply to this Position</span>
+        </div>
+        
+        <div class="step-tracker">
+            <div class="step-node active" id="stepNode1">1</div>
+            <div class="step-node" id="stepNode2">2</div>
+        </div>
+        
+        <form id="applyForm" method="POST">
+            <!-- Step 1: Frictionless Auto-populated Details -->
+            <div class="form-step active" id="formStep1">
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Confirm your contact details. These statistics are auto-populated from your account.
+                </p>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" class="form-control" value="{{ user.name }}" readonly style="opacity: 0.7;">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" class="form-control" value="{{ user.email }}" readonly style="opacity: 0.7;">
+                </div>
+                <div class="form-group">
+                    <label for="resume_url">Resume Path / Link</label>
+                    <input type="text" name="resume_url" id="resume_url" class="form-control" placeholder="https://drive.google.com/your-resume-link" required>
+                </div>
+                <div style="text-align: right; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">Continue to Cover Letter &rarr;</button>
+                </div>
+            </div>
+            
+            <!-- Step 2: Cover Letter / Custom Application Data -->
+            <div class="form-step" id="formStep2">
+                <div class="form-group">
+                    <label for="cover_letter">Cover Letter</label>
+                    <textarea name="cover_letter" id="cover_letter" class="form-control" rows="6" placeholder="Describe why you are a great fit for this role..." required></textarea>
+                </div>
+                
+                <!-- Action Buttons: Save Draft or Submit Application -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep()">&larr; Back</button>
+                    
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="submit" id="btnSaveDraft" class="btn btn-secondary" style="border-color: var(--accent-indigo); color: var(--text-primary);">
+                            Save as Draft
+                        </button>
+                        <button type="submit" id="btnSubmitApp" class="btn btn-primary">
+                            Submit Application
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 1. Client-Side Real-time Filter (Job Search)
+    const jobSearch = document.getElementById('jobSearch');
+    jobSearch.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const cards = document.querySelectorAll('.job-card');
+        cards.forEach(card => {
+            const title = card.querySelector('.job-title').textContent.toLowerCase();
+            const company = card.querySelector('.job-company').textContent.toLowerCase();
+            const location = card.querySelector('.job-location').textContent.toLowerCase();
+            if (title.includes(query) || company.includes(query) || location.includes(query)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+
+    // 2. Modal Controls & Progressive Disclosure Details
+    const jobModal = document.getElementById('jobModal');
+    let currentActiveStep = 1;
+
+    function openJobDetails(jobId, title, company, location, salary, desc, draftCoverLetter, draftStep) {
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalCompany').textContent = company;
+        document.getElementById('modalLocation').textContent = '📍 ' + location;
+        document.getElementById('modalSalary').textContent = '💰 $' + Number(salary).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('modalDesc').textContent = desc.replace(/\\n/g, '\n');
+        
+        // Auto-configure the button actions using HTML5 formaction overriding
+        document.getElementById('btnSaveDraft').formAction = '/jobs/' + jobId + '/save-draft';
+        document.getElementById('btnSubmitApp').formAction = '/jobs/' + jobId + '/apply';
+        
+        // Populate cover letter if draft exists
+        document.getElementById('cover_letter').value = draftCoverLetter || '';
+        
+        // Reset step forms
+        currentActiveStep = draftStep || 1;
+        goToStep(currentActiveStep);
+        
+        // Open modal
+        jobModal.classList.add('active');
+    }
+
+    function closeJobModal() {
+        jobModal.classList.remove('active');
+    }
+
+    // Close modal when clicking outside content card
+    jobModal.addEventListener('click', function(e) {
+        if (e.target === jobModal) {
+            closeJobModal();
+        }
+    });
+
+    // 3. Multi-step Form Navigation
+    function goToStep(step) {
+        currentActiveStep = step;
+        
+        // Toggle active steps UI
+        document.querySelectorAll('.form-step').forEach((el, index) => {
+            if (index + 1 === step) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        });
+        
+        // Toggle step tracker nodes
+        const node1 = document.getElementById('stepNode1');
+        const node2 = document.getElementById('stepNode2');
+        
+        if (step === 1) {
+            node1.className = 'step-node active';
+            node2.className = 'step-node';
+        } else if (step === 2) {
+            node1.className = 'step-node completed';
+            node2.className = 'step-node active';
+        }
+    }
+
+    function nextStep() {
+        // Simple client-side validation for Step 1
+        const resumeUrl = document.getElementById('resume_url');
+        if (!resumeUrl.value.trim()) {
+            alert('Please provide a resume path or link to continue.');
+            resumeUrl.focus();
+            return;
+        }
+        goToStep(2);
+    }
+
+    function prevStep() {
+        goToStep(1);
+    }
+</script>
+{% endblock %}
