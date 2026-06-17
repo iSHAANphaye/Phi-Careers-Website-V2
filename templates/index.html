@@ -11,14 +11,14 @@
     </p>
     <div class="hero-ctas">
         {% if session.get('user_id') %}
-            <a href="{{ url_for('dashboard') }}" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary" style="padding: 0.8rem 2.5rem; font-size: 1rem;">
                 Go to Dashboard
             </a>
         {% else %}
-            <a href="{{ url_for('auth.register') }}" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary" style="padding: 0.8rem 2.5rem; font-size: 1rem;">
                 Get Started
             </a>
-            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary" style="padding: 0.8rem 2rem; font-size: 1rem;">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary" style="padding: 0.8rem 2.5rem; font-size: 1rem;">
                 Explore Jobs
             </a>
         {% endif %}
@@ -34,7 +34,7 @@
     <div class="feature-grid">
         <!-- Pillar 1: Progressive Disclosure -->
         <div class="feature-card">
-            <span class="feature-icon">🔍</span>
+            <span class="feature-icon" style="filter: drop-shadow(0 2px 8px rgba(99,102,241,0.5));">🔍</span>
             <h3>Progressive Disclosure Feed</h3>
             <p>
                 Browse clean, scannable job cards without visual noise. Reveal comprehensive descriptions, salaries, and locations via fluid modal overlays only when interested.
@@ -43,7 +43,7 @@
         
         <!-- Pillar 2: Frictionless Forms -->
         <div class="feature-card">
-            <span class="feature-icon">⚡</span>
+            <span class="feature-icon" style="filter: drop-shadow(0 2px 8px rgba(168,85,247,0.5));">⚡</span>
             <h3>Frictionless Form Filling</h3>
             <p>
                 Profile details, names, and contact emails are automatically pre-populated in your application fields. Complete applications or save partial drafts in two clicks.
@@ -52,7 +52,7 @@
         
         <!-- Pillar 3: Visual Pipeline -->
         <div class="feature-card">
-            <span class="feature-icon">📊</span>
+            <span class="feature-icon" style="filter: drop-shadow(0 2px 8px rgba(236,72,153,0.5));">📊</span>
             <h3>Visual Pipeline Tracking</h3>
             <p>
                 Stay updated throughout the recruitment process. Monitor your applications live as they progress from draft to reviewed, hired, or rejected.
@@ -61,20 +61,20 @@
     </div>
 </section>
 
-<!-- Stats Section -->
+<!-- Stats Section (Marketplace Career Focus) -->
 <section class="stats-section">
     <div class="stats-grid">
         <div class="stat-item">
-            <h2>100%</h2>
-            <p>SDLC Compliant Architecture</p>
+            <h2>12,000+</h2>
+            <p>Active Openings</p>
         </div>
         <div class="stat-item">
-            <h2>3NF</h2>
-            <p>Normalized Relational Database</p>
+            <h2>450+</h2>
+            <p>Verified Employers</p>
         </div>
         <div class="stat-item">
-            <h2>15+</h2>
-            <p>Systematic QA Bugs Resolved</p>
+            <h2>98%</h2>
+            <p>Candidate Match Rate</p>
         </div>
     </div>
 </section>
