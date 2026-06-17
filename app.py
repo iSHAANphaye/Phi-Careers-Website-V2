@@ -16,7 +16,22 @@ app.register_blueprint(auth_bp, url_prefix='/auth')
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # Fetch a preview of the 3 most recently posted open job listings
+    featured_query = """
+        SELECT j.*, c.name as company_name
+        FROM job_listings j
+        JOIN companies c ON j.company_id = c.company_id
+        WHERE j.status = 'open'
+        ORDER BY j.created_at DESC
+        LIMIT 3
+    """
+    featured_jobs = []
+    try:
+        featured_jobs = db_helper.fetch_all(featured_query)
+    except Exception as e:
+        print(f"Failed to fetch featured jobs: {e}")
+        
+    return render_template('index.html', featured_jobs=featured_jobs)
 
 @app.route('/dashboard')
 @login_required
