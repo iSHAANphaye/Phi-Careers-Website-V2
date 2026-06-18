@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: phi-careers
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_PORT
+        value: "26691"
+      - key: DB_NAME
+        value: "phi_careers"
