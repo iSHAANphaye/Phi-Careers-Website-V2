@@ -42,10 +42,27 @@ def register():
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
         role = request.form.get('role', 'candidate').strip()
         
-        if not name or not email or not password or role not in ['candidate', 'employer']:
+        if not name or not email or not password or not confirm_password or role not in ['candidate', 'employer']:
             flash("All fields are required and role must be valid.", "error")
+            return redirect(url_for('auth.register'))
+            
+        if len(name) > 100:
+            flash("Name must be 100 characters or less.", "error")
+            return redirect(url_for('auth.register'))
+            
+        if len(email) > 100:
+            flash("Email must be 100 characters or less.", "error")
+            return redirect(url_for('auth.register'))
+            
+        if len(password.strip()) < 6:
+            flash("Password must be at least 6 characters long.", "error")
+            return redirect(url_for('auth.register'))
+            
+        if password != confirm_password:
+            flash("Passwords do not match.", "error")
             return redirect(url_for('auth.register'))
             
         if not EMAIL_REGEX.match(email):

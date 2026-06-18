@@ -27,3 +27,7 @@ __pycache__/
 # Database/Docker volumes local caches
 .db_data/
 db_schema_plan.pdf
+
+# Logs
+*.log
+

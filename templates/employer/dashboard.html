@@ -78,9 +78,13 @@
                                             <a href="{{ app.resume_url }}" target="_blank" style="color: var(--accent-indigo); text-decoration: none; font-size: 0.8rem; font-weight: 500;">
                                                 📄 Resume
                                             </a>
-                                            <span onclick="alert('Cover Letter:\n\n' + {{ app.cover_letter | tojson }})" style="color: var(--accent-purple); cursor: pointer; font-size: 0.8rem; font-weight: 500;">
+                                            <span onclick="showCoverLetter(this)" 
+                                                  data-app-id="{{ app.application_id }}"
+                                                  data-candidate-name="{{ app.candidate_name | escape }}"
+                                                  style="color: var(--accent-purple); cursor: pointer; font-size: 0.8rem; font-weight: 500;">
                                                 ✉️ Cover Letter
                                             </span>
+                                            <div id="cover-letter-text-{{ app.application_id }}" style="display: none;">{{ app.cover_letter }}</div>
                                         </div>
                                     </td>
                                     <td style="text-align: right;">
@@ -155,4 +159,15 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function showCoverLetter(element) {
+        const appId = element.dataset.appId;
+        const name = element.dataset.candidateName;
+        const coverLetterText = document.getElementById('cover-letter-text-' + appId).textContent;
+        alert('Cover Letter from ' + name + ':\n\n' + coverLetterText);
+    }
+</script>
 {% endblock %}

@@ -15,7 +15,16 @@
         <div class="job-feed" id="jobFeed">
             {% if jobs %}
                 {% for job in jobs %}
-                    <div class="card card-hover job-card" onclick="openJobDetails({{ job.job_id }}, '{{ job.title | escape }}', '{{ job.company_name | escape }}', '{{ job.location | escape }}', '{{ job.salary | escape }}', '{{ job.description | replace('\r\n', '\\n') | replace('\n', '\\n') | escape }}', '{{ job.draft_cover_letter | escape }}', {{ job.draft_step or 1 }})">
+                    <div class="card card-hover job-card" 
+                         data-job-id="{{ job.job_id }}"
+                         data-title="{{ job.title | escape }}"
+                         data-company-name="{{ job.company_name | escape }}"
+                         data-location="{{ job.location | escape }}"
+                         data-salary="{{ job.salary | escape }}"
+                         data-description="{{ job.description | escape }}"
+                         data-draft-cover-letter="{{ job.draft_cover_letter | escape if job.draft_cover_letter else '' }}"
+                         data-draft-step="{{ job.draft_step or 1 }}"
+                         onclick="openJobDetails(this)">
                         <div class="job-card-header">
                             <div>
                                 <h3 class="job-title">{{ job.title }}</h3>
@@ -186,12 +195,21 @@
     const jobModal = document.getElementById('jobModal');
     let currentActiveStep = 1;
 
-    function openJobDetails(jobId, title, company, location, salary, desc, draftCoverLetter, draftStep) {
+    function openJobDetails(element) {
+        const jobId = element.dataset.jobId;
+        const title = element.dataset.title;
+        const company = element.dataset.companyName;
+        const location = element.dataset.location;
+        const salary = element.dataset.salary;
+        const desc = element.dataset.description;
+        const draftCoverLetter = element.dataset.draftCoverLetter;
+        const draftStep = parseInt(element.dataset.draftStep) || 1;
+
         document.getElementById('modalTitle').textContent = title;
         document.getElementById('modalCompany').textContent = company;
         document.getElementById('modalLocation').textContent = '📍 ' + location;
         document.getElementById('modalSalary').textContent = '💰 $' + Number(salary).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        document.getElementById('modalDesc').textContent = desc.replace(/\\n/g, '\n');
+        document.getElementById('modalDesc').textContent = desc;
         
         // Auto-configure the button actions using HTML5 formaction overriding
         document.getElementById('btnSaveDraft').formAction = '/jobs/' + jobId + '/save-draft';

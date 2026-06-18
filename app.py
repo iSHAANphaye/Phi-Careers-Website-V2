@@ -123,6 +123,21 @@ def apply_job(job_id):
         flash("Resume path and cover letter are required to submit an application.", "error")
         return redirect(url_for('dashboard'))
         
+    # BUG-05 & BUG-06: Check if job exists and is open
+    job = db_helper.fetch_one("SELECT status FROM job_listings WHERE job_id = %s", (job_id,))
+    if not job:
+        flash("Job listing not found.", "error")
+        return redirect(url_for('dashboard'))
+    if job['status'] != 'open':
+        flash("This job listing is closed and no longer accepting applications.", "error")
+        return redirect(url_for('dashboard'))
+        
+    # BUG-07: Verify candidate has not already submitted an application
+    existing_app = db_helper.fetch_one("SELECT status FROM applications WHERE user_id = %s AND job_id = %s", (user_id, job_id))
+    if existing_app and existing_app['status'] != 'draft':
+        flash("You have already submitted an application for this job.", "error")
+        return redirect(url_for('dashboard'))
+        
     try:
         # Parameterized upsert using ON DUPLICATE KEY UPDATE
         apply_query = """
@@ -149,6 +164,21 @@ def save_draft(job_id):
     cover_letter = request.form.get('cover_letter', '').strip()
     resume_url = request.form.get('resume_url', '').strip()
     
+    # BUG-05 & BUG-06: Check if job exists and is open
+    job = db_helper.fetch_one("SELECT status FROM job_listings WHERE job_id = %s", (job_id,))
+    if not job:
+        flash("Job listing not found.", "error")
+        return redirect(url_for('dashboard'))
+    if job['status'] != 'open':
+        flash("This job listing is closed and cannot save draft.", "error")
+        return redirect(url_for('dashboard'))
+        
+    # BUG-08: Verify candidate is not demoting a submitted application to draft
+    existing_app = db_helper.fetch_one("SELECT status FROM applications WHERE user_id = %s AND job_id = %s", (user_id, job_id))
+    if existing_app and existing_app['status'] != 'draft':
+        flash("You cannot save a draft for a submitted application.", "error")
+        return redirect(url_for('dashboard'))
+        
     try:
         # Parameterized upsert for draft state
         draft_query = """
@@ -180,10 +210,26 @@ def create_job():
         flash("All job listing fields are required.", "error")
         return redirect(url_for('dashboard'))
         
+    # BUG-16: Enforce job title, location, description length boundaries
+    if len(title) > 100:
+        flash("Title must be 100 characters or less.", "error")
+        return redirect(url_for('dashboard'))
+    if len(location) > 100:
+        flash("Location must be 100 characters or less.", "error")
+        return redirect(url_for('dashboard'))
+    if len(description) > 1000:
+        flash("Description must be 1000 characters or less.", "error")
+        return redirect(url_for('dashboard'))
+        
     try:
         salary_val = float(salary)
+        # BUG-03: Enforce positive salary bounds
         if salary_val < 0:
             flash("Salary must be a positive number.", "error")
+            return redirect(url_for('dashboard'))
+        # BUG-11: Enforce salary upper-bound (under DECIMAL(10,2) overflow limit)
+        if salary_val >= 100000000:
+            flash("Salary must be less than 100,000,000.", "error")
             return redirect(url_for('dashboard'))
     except ValueError:
         flash("Invalid salary format. Please enter a valid number.", "error")
@@ -221,6 +267,17 @@ def update_app_status(app_id):
     
     if new_status not in ['reviewed', 'rejected', 'hired']:
         flash("Invalid status transition.", "error")
+        return redirect(url_for('dashboard'))
+        
+    # Check if application exists
+    app_record = db_helper.fetch_one("SELECT status FROM applications WHERE application_id = %s", (app_id,))
+    if not app_record:
+        flash("Application not found.", "error")
+        return redirect(url_for('dashboard'))
+        
+    # BUG-09: Block employers from modifying or updating draft applications
+    if app_record['status'] == 'draft':
+        flash("Cannot update status of a draft application.", "error")
         return redirect(url_for('dashboard'))
         
     try:
