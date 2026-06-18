@@ -2,6 +2,9 @@ from flask import Blueprint, request, redirect, url_for, render_template, sessio
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 import db_helper
+import re
+
+EMAIL_REGEX = re.compile(r"^[\w\.-]+@[\w\.-]+\.\w+$")
 
 # Create the authentication blueprint
 auth_bp = Blueprint('auth', __name__)
@@ -43,6 +46,10 @@ def register():
         
         if not name or not email or not password or role not in ['candidate', 'employer']:
             flash("All fields are required and role must be valid.", "error")
+            return redirect(url_for('auth.register'))
+            
+        if not EMAIL_REGEX.match(email):
+            flash("Please provide a valid email address.", "error")
             return redirect(url_for('auth.register'))
             
         # Check if user already exists

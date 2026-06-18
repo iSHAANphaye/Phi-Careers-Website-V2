@@ -98,6 +98,7 @@ def dashboard():
             FROM applications a
             JOIN users u ON a.user_id = u.user_id
             JOIN job_listings j ON a.job_id = j.job_id
+            WHERE a.status != 'draft'
             ORDER BY a.updated_at DESC
         """
         applications = db_helper.fetch_all(apps_query)
@@ -177,6 +178,15 @@ def create_job():
     
     if not title or not location or not salary or not description:
         flash("All job listing fields are required.", "error")
+        return redirect(url_for('dashboard'))
+        
+    try:
+        salary_val = float(salary)
+        if salary_val < 0:
+            flash("Salary must be a positive number.", "error")
+            return redirect(url_for('dashboard'))
+    except ValueError:
+        flash("Invalid salary format. Please enter a valid number.", "error")
         return redirect(url_for('dashboard'))
         
     try:
