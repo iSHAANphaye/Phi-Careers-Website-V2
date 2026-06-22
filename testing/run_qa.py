@@ -9,18 +9,34 @@ def run_qa_suite():
     print("       STARTING PHI CAREERS SYSTEM QA SUITE       ")
     print("==================================================")
     
-    # 0. Clean up any existing QA test user & applications from database
+    # 0. Reset database by running seed.sql
     try:
         sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
         import db_helper
-        db_helper.execute_query("DELETE FROM users WHERE email = %s", ("qa.test@phicareers.com",))
-        db_helper.execute_query("DELETE FROM users WHERE email = %s", ("qa.employer@phicareers.com",))
-        db_helper.execute_query("DELETE FROM applications WHERE user_id = 7 or job_id = 9999")
-        # Ensure job ID 1 is open
-        db_helper.execute_query("UPDATE job_listings SET status = 'open' WHERE job_id = 1")
-        print("[0] Cleaned up database test records successfully.")
+        
+        # Read and execute seed.sql to reset DB state completely
+        seed_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'seed.sql')
+        with open(seed_path, 'r', encoding='utf-8') as f:
+            seed_sql = f.read()
+            
+        # Strip comments line-by-line first to prevent skipping queries
+        lines = seed_sql.split('\n')
+        clean_lines = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped and not stripped.startswith('--'):
+                clean_lines.append(line)
+        clean_sql = '\n'.join(clean_lines)
+        
+        # Split queries by semicolon and execute
+        queries = clean_sql.split(';')
+        for query in queries:
+            clean_query = query.strip()
+            if clean_query:
+                db_helper.execute_query(clean_query)
+        print("[0] Reset database using seed.sql successfully.")
     except Exception as e:
-        print(f"[-] Warning: Database cleanup failed: {e}")
+        print(f"[-] Warning: Database reset/seeding failed: {e}")
 
     # 1. Start the Flask server in a subprocess
     print("[1] Launching Flask server subprocess on port 5001...")
@@ -250,6 +266,147 @@ def run_qa_suite():
         }, allow_redirects=True)
         assert "Cannot update status of a draft application." in r_update_draft.text, "Failed to block employer updating draft"
         print("  [OK] Blocked employer from modifying candidate drafts.")
+
+        # Test Case E: Employer updates application 1 status to 'hired' and checks for candidate email
+        print("  Testing employer hiring candidate and sending email...")
+        
+        # Clear mock_emails directory before testing to make verification clean
+        import shutil
+        mock_emails_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'mock_emails')
+        if os.path.exists(mock_emails_dir):
+            shutil.rmtree(mock_emails_dir)
+            
+        r_update_hired = session.post("http://localhost:5001/applications/1/status", data={
+            "status": "hired"
+        }, allow_redirects=True)
+        assert "Candidate application status updated to &#39;hired&#39;." in r_update_hired.text, "Failed to update status to hired"
+        
+        # Verify db status reflects hired
+        hired_app = db_helper.fetch_one("SELECT status FROM applications WHERE application_id = 1")
+        assert hired_app['status'] == 'hired', "Application status in database is not 'hired'"
+        
+        # Verify mock email file exists and content is correct
+        assert os.path.exists(mock_emails_dir), "mock_emails directory not created"
+        email_files = os.listdir(mock_emails_dir)
+        assert len(email_files) > 0, "No mock email files generated"
+        
+        hired_email_file = None
+        for f in email_files:
+            if 'hired' in f and 'jane_candidate_com' in f:
+                hired_email_file = f
+                break
+        assert hired_email_file is not None, "Jane candidate hired email file not found"
+        
+        with open(os.path.join(mock_emails_dir, hired_email_file), 'r', encoding='utf-8') as f:
+            email_content = f.read()
+            assert "To: jane@candidate.com" in email_content, "Recipient email mismatch"
+            assert "Congratulations!" in email_content, "Email subject/body missing 'Congratulations!'"
+            assert "hired" in email_content, "Email content missing 'hired'"
+            assert "Backend Software Engineer" in email_content, "Email content missing job title"
+            assert "Stripe" in email_content, "Email content missing company name"
+        print("  [OK] Successfully hired candidate and verified email notification.")
+
+        # Test Case F: Employer updates application 3 status to 'rejected' and checks for candidate email
+        print("  Testing employer rejecting candidate and sending email...")
+        r_update_rejected = session.post("http://localhost:5001/applications/3/status", data={
+            "status": "rejected"
+        }, allow_redirects=True)
+        assert "Candidate application status updated to &#39;rejected&#39;." in r_update_rejected.text, "Failed to update status to rejected"
+        
+        # Verify db status reflects rejected
+        rejected_app = db_helper.fetch_one("SELECT status FROM applications WHERE application_id = 3")
+        assert rejected_app['status'] == 'rejected', "Application status in database is not 'rejected'"
+        
+        email_files = os.listdir(mock_emails_dir)
+        rejected_email_file = None
+        for f in email_files:
+            if 'rejected' in f and 'jane_candidate_com' in f:
+                rejected_email_file = f
+                break
+        assert rejected_email_file is not None, "Jane candidate rejected email file not found"
+        
+        with open(os.path.join(mock_emails_dir, rejected_email_file), 'r', encoding='utf-8') as f:
+            email_content = f.read()
+            assert "To: jane@candidate.com" in email_content, "Recipient email mismatch"
+            assert "decided to move forward with other candidates" in email_content, "Email body missing standard rejection text"
+            assert "Cloud Product Manager" in email_content, "Email content missing job title"
+            assert "Microsoft" in email_content, "Email content missing company name"
+        print("  [OK] Successfully rejected candidate and verified email notification.")
+
+        # Test Case G: Job Update & Delete validations
+        print("  Running job update & delete validation and security checks...")
+        
+        # 1. Unauthorized Job Update
+        # Alice tries to update Bob's job (job_id 3)
+        r_unauth_update = session.post("http://localhost:5001/jobs/3/update", data={
+            "title": "Hacked Title", "location": "Remote", "salary": "120000", "description": "Hacked desc", "status": "open"
+        }, allow_redirects=True)
+        assert "Job listing not found or unauthorized." in r_unauth_update.text, "Failed to block unauthorized job update"
+        
+        # Verify job 3 was not updated
+        job3 = db_helper.fetch_one("SELECT title FROM job_listings WHERE job_id = 3")
+        assert job3['title'] != "Hacked Title", "Unauthorized job update succeeded!"
+        print("    [OK] Blocked unauthorized job update.")
+        
+        # 2. Boundary check: Negative Salary
+        r_neg_sal = session.post("http://localhost:5001/jobs/1/update", data={
+            "title": "New Title", "location": "Remote", "salary": "-500", "description": "Desc", "status": "open"
+        }, allow_redirects=True)
+        assert "Salary must be a positive number." in r_neg_sal.text, "Failed to block negative salary on update"
+        
+        # 3. Boundary check: Overflow Salary
+        r_over_sal = session.post("http://localhost:5001/jobs/1/update", data={
+            "title": "New Title", "location": "Remote", "salary": "100000000", "description": "Desc", "status": "open"
+        }, allow_redirects=True)
+        assert "Salary must be less than 100,000,000." in r_over_sal.text, "Failed to block overflow salary on update"
+        print("    [OK] Blocked invalid salary values on update.")
+        
+        # 4. Successful Job Update
+        r_valid_update = session.post("http://localhost:5001/jobs/1/update", data={
+            "title": "Updated Backend Engineer", 
+            "location": "Chicago, IL", 
+            "salary": "140000", 
+            "description": "Updated description text.", 
+            "status": "closed"
+        }, allow_redirects=True)
+        assert "Job listing updated successfully!" in r_valid_update.text, "Failed to update job listing with valid data"
+        
+        # Verify changes in DB
+        job1 = db_helper.fetch_one("SELECT * FROM job_listings WHERE job_id = 1")
+        assert job1['title'] == "Updated Backend Engineer", "Title not updated in DB"
+        assert job1['location'] == "Chicago, IL", "Location not updated in DB"
+        assert float(job1['salary']) == 140000.0, "Salary not updated in DB"
+        assert job1['description'] == "Updated description text.", "Description not updated in DB"
+        assert job1['status'] == "closed", "Status not updated in DB"
+        print("    [OK] Successfully updated own job listing and verified DB changes.")
+        
+        # 5. Unauthorized Job Delete
+        # Alice tries to delete Bob's job (job_id 3)
+        r_unauth_delete = session.post("http://localhost:5001/jobs/3/delete", allow_redirects=True)
+        assert "Job listing not found or unauthorized." in r_unauth_delete.text, "Failed to block unauthorized job deletion"
+        
+        # Verify job 3 still exists
+        job3_check = db_helper.fetch_one("SELECT * FROM job_listings WHERE job_id = 3")
+        assert job3_check is not None, "Unauthorized job deletion succeeded!"
+        print("    [OK] Blocked unauthorized job deletion.")
+        
+        # 6. Successful Job Delete
+        # First verify Application 1 exists for job 1
+        app1_pre = db_helper.fetch_one("SELECT * FROM applications WHERE application_id = 1")
+        assert app1_pre is not None, "Application 1 should exist before job deletion"
+        
+        # Delete job 1
+        r_valid_delete = session.post("http://localhost:5001/jobs/1/delete", allow_redirects=True)
+        assert "Job listing deleted successfully!" in r_valid_delete.text, "Failed to delete job listing"
+        
+        # Verify job 1 is deleted from DB
+        job1_check = db_helper.fetch_one("SELECT * FROM job_listings WHERE job_id = 1")
+        assert job1_check is None, "Job 1 still exists in database!"
+        
+        # Verify cascade deletion of Application 1
+        app1_post = db_helper.fetch_one("SELECT * FROM applications WHERE application_id = 1")
+        assert app1_post is None, "Application 1 was not cascadingly deleted!"
+        print("    [OK] Successfully deleted own job listing and verified cascade deletion of applications.")
 
         # 7. Test SQL injection sanitization (Penetration check)
         print("[7] Running SQL injection sanitization verification...")

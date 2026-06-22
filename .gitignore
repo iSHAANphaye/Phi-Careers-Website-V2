@@ -31,3 +31,6 @@ db_schema_plan.pdf
 # Logs
 *.log
 
+# Mock emails directory for local testing
+mock_emails/
+

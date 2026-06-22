@@ -44,6 +44,24 @@
                         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.75rem; white-space: pre-line;">
                             {{ job.description[:200] }}{% if job.description | length > 200 %}...{% endif %}
                         </p>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+                            <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; border-color: rgba(255,255,255,0.15);" 
+                                    onclick="openEditJobModal(this)"
+                                    data-job-id="{{ job.job_id }}"
+                                    data-title="{{ job.title | escape }}"
+                                    data-location="{{ job.location | escape }}"
+                                    data-salary="{{ job.salary }}"
+                                    data-status="{{ job.status }}"
+                                    data-description="{{ job.description | escape }}">
+                                ✏️ Edit
+                            </button>
+                            <form method="POST" action="/jobs/{{ job.job_id }}/delete" style="display: inline;" 
+                                  onsubmit="return confirm('Are you sure you want to delete this job listing? This will also delete all candidate applications for this job.');">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: var(--danger);">
+                                    🗑️ Delete
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 {% endfor %}
             {% else %}
@@ -173,6 +191,53 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Job Modal -->
+<div class="modal" id="editJobModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeEditJobModal()">&times;</button>
+        <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--text-primary);">Edit Job Listing</h2>
+        <form id="editJobForm" method="POST" action="">
+            <div class="form-group">
+                <label for="editTitle">Job Title</label>
+                <input type="text" id="editTitle" name="title" class="form-control" required>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="editLocation">Location</label>
+                    <input type="text" id="editLocation" name="location" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="editSalary">Annual Salary ($)</label>
+                    <input type="number" id="editSalary" name="salary" class="form-control" min="0" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="editStatus">Status</label>
+                <select id="editStatus" name="status" class="form-control" required>
+                    <option value="open">Open</option>
+                    <option value="closed">Closed</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="editDescription">Job Description</label>
+                <textarea id="editDescription" name="description" class="form-control" rows="8" required></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    💾 Save Changes
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditJobModal()" style="flex: 1; border-color: rgba(255,255,255,0.15);">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -183,5 +248,41 @@
         const coverLetterText = document.getElementById('cover-letter-text-' + appId).textContent;
         alert('Cover Letter from ' + name + ':\n\n' + coverLetterText);
     }
+
+    const editJobModal = document.getElementById('editJobModal');
+    const editJobForm = document.getElementById('editJobForm');
+    
+    function openEditJobModal(button) {
+        const jobId = button.dataset.jobId;
+        const title = button.dataset.title;
+        const location = button.dataset.location;
+        const salary = button.dataset.salary;
+        const status = button.dataset.status;
+        const description = button.dataset.description;
+        
+        // Update form action url dynamically
+        editJobForm.action = '/jobs/' + jobId + '/update';
+        
+        // Populate inputs
+        document.getElementById('editTitle').value = title;
+        document.getElementById('editLocation').value = location;
+        document.getElementById('editSalary').value = Math.round(parseFloat(salary));
+        document.getElementById('editStatus').value = status;
+        document.getElementById('editDescription').value = description;
+        
+        // Show modal
+        editJobModal.classList.add('active');
+    }
+    
+    function closeEditJobModal() {
+        editJobModal.classList.remove('active');
+    }
+    
+    // Close modal when clicking outside content card
+    editJobModal.addEventListener('click', function(e) {
+        if (e.target === editJobModal) {
+            closeEditJobModal();
+        }
+    });
 </script>
 {% endblock %}
