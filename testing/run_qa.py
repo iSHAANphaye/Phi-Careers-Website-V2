@@ -14,6 +14,7 @@ def run_qa_suite():
         sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
         import db_helper
         db_helper.execute_query("DELETE FROM users WHERE email = %s", ("qa.test@phicareers.com",))
+        db_helper.execute_query("DELETE FROM users WHERE email = %s", ("qa.employer@phicareers.com",))
         db_helper.execute_query("DELETE FROM applications WHERE user_id = 7 or job_id = 9999")
         # Ensure job ID 1 is open
         db_helper.execute_query("UPDATE job_listings SET status = 'open' WHERE job_id = 1")
@@ -26,7 +27,7 @@ def run_qa_suite():
     log_file = open("testing/server.log", "w")
     process = subprocess.Popen(
         [sys.executable, "-u", "app.py"],
-        cwd="d:/Antigravity dev/Phi Careers",
+        cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         stdout=log_file,
         stderr=log_file
     )
@@ -125,6 +126,22 @@ def run_qa_suite():
         })
         assert "An account with that email already exists" in r_dup.text, "Failed to block duplicate email"
         print("  [OK] Blocked duplicate email sign-ups.")
+
+        # Test Case: Employer registration missing company name
+        r_emp_fail = session.post("http://localhost:5001/auth/register", data={
+            "name": "QA Employer", "email": "qa.employer@phicareers.com", "password": "password123", "confirm_password": "password123", "role": "employer",
+            "company_name": ""
+        })
+        assert "Company name is required for employers." in r_emp_fail.text, "Failed to block empty company name for employer"
+        print("  [OK] Blocked employer registration with empty company name.")
+
+        # Test Case: Successful employer registration with company name
+        r_emp_ok = session.post("http://localhost:5001/auth/register", data={
+            "name": "QA Employer", "email": "qa.employer@phicareers.com", "password": "password123", "confirm_password": "password123", "role": "employer",
+            "company_name": "QA Testing Enterprise"
+        }, allow_redirects=True)
+        assert "Registration successful!" in r_emp_ok.text, "Failed valid employer registration"
+        print("  [OK] Registered employer with company successfully.")
 
         # 4. Test authentication & login bounds
         print("[4] Running authentication and session verification...")

@@ -1,7 +1,9 @@
 import os
+# pyrefly: ignore [missing-import]
 from flask import Flask, redirect, url_for, render_template, request, session, flash
 from auth import auth_bp, login_required, role_required
 import db_helper
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 
 # Load env variables from .env
@@ -74,38 +76,45 @@ def dashboard():
         
     elif role == 'employer':
         # Get or create a default company for simple setup
-        company = db_helper.fetch_one("SELECT * FROM companies LIMIT 1")
+        company = db_helper.fetch_one("SELECT * FROM companies WHERE user_id = %s", (user_id,))
         if not company:
-            company_id = db_helper.execute_query(
-                "INSERT INTO companies (name, website, description) VALUES (%s, %s, %s)",
-                ("Phi Careers Corp", "https://phicareers.com", "A recruitment agency.")
-            )
+            try:
+                company_id = db_helper.execute_query(
+                    "INSERT INTO companies (user_id, name, website, description) VALUES (%s, %s, %s, %s)",
+                    (user_id, "Phi Careers Corp", "https://phicareers.com", "A recruitment agency.")
+                )
+            except Exception as e:
+                flash("Failed to initialize company. Please try again.", "error")
+                print(f"Company Initialization Error: {e}")
+                return render_template('employer/dashboard.html', user=user_profile, jobs=[], applications=[])
         else:
             company_id = company['company_id']
             
-        # Fetch all jobs posted
+        # Fetch all jobs posted by this company
         jobs_query = """
             SELECT j.*, c.name as company_name
             FROM job_listings j
             JOIN companies c ON j.company_id = c.company_id
+            WHERE j.company_id = %s
             ORDER BY j.created_at DESC
         """
-        jobs = db_helper.fetch_all(jobs_query)
+        jobs = db_helper.fetch_all(jobs_query, (company_id,))
         
-        # Fetch all applications received for jobs
+        # Fetch all applications received for this company's jobs
         apps_query = """
             SELECT a.*, u.name as candidate_name, u.email as candidate_email, j.title as job_title
             FROM applications a
             JOIN users u ON a.user_id = u.user_id
             JOIN job_listings j ON a.job_id = j.job_id
-            WHERE a.status != 'draft'
+            WHERE a.status != 'draft' AND j.company_id = %s
             ORDER BY a.updated_at DESC
         """
-        applications = db_helper.fetch_all(apps_query)
+        applications = db_helper.fetch_all(apps_query, (company_id,))
         
         return render_template(
             'employer/dashboard.html', 
             user=user_profile, 
+            company=company,
             jobs=jobs, 
             applications=applications
         )
@@ -235,13 +244,14 @@ def create_job():
         flash("Invalid salary format. Please enter a valid number.", "error")
         return redirect(url_for('dashboard'))
         
+    user_id = session['user_id']
     try:
         # Get or create a company to associate listing with
-        company = db_helper.fetch_one("SELECT * FROM companies LIMIT 1")
+        company = db_helper.fetch_one("SELECT * FROM companies WHERE user_id = %s", (user_id,))
         if not company:
             company_id = db_helper.execute_query(
-                "INSERT INTO companies (name, website, description) VALUES (%s, %s, %s)",
-                ("Phi Careers Corp", "https://phicareers.com", "A recruitment agency.")
+                "INSERT INTO companies (user_id, name, website, description) VALUES (%s, %s, %s, %s)",
+                (user_id, "Phi Careers Corp", "https://phicareers.com", "A recruitment agency.")
             )
         else:
             company_id = company['company_id']

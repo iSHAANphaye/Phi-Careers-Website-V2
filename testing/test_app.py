@@ -11,7 +11,7 @@ def verify_app_startup():
     print("Launching Flask server subprocess...")
     process = subprocess.Popen(
         [sys.executable, "app.py"],
-        cwd="d:/Antigravity dev/Phi Careers",
+        cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True

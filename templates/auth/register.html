@@ -36,10 +36,32 @@
                     <option value="employer">Employer (Posting Jobs)</option>
                 </select>
             </div>
+
+            <div class="form-group" id="company-name-group" style="display: none;">
+                <label for="company_name">Company Name</label>
+                <input type="text" id="company_name" name="company_name" class="form-control" placeholder="e.g. Acme Corp">
+            </div>
             
             <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
                 Create Account
             </button>
+
+            <script>
+                const roleSelect = document.getElementById('role');
+                const companyGroup = document.getElementById('company-name-group');
+                const companyInput = document.getElementById('company_name');
+
+                roleSelect.addEventListener('change', function() {
+                    if (this.value === 'employer') {
+                        companyGroup.style.display = 'block';
+                        companyInput.required = true;
+                    } else {
+                        companyGroup.style.display = 'none';
+                        companyInput.required = false;
+                        companyInput.value = '';
+                    }
+                });
+            </script>
         </form>
         
         <p style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem; color: var(--text-secondary);">

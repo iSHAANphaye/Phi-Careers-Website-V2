@@ -2,10 +2,10 @@ USE phi_careers;
 
 -- Clear existing data (in reverse dependency order)
 SET FOREIGN_KEY_CHECKS = 0;
-TRUNCATE TABLE applications;
-TRUNCATE TABLE job_listings;
-TRUNCATE TABLE companies;
-TRUNCATE TABLE users;
+DELETE FROM applications;
+DELETE FROM job_listings;
+DELETE FROM companies;
+DELETE FROM users;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- 1. Insert Dummy Users
@@ -17,10 +17,10 @@ INSERT INTO users (user_id, name, email, password_hash, role) VALUES
 (4, 'Bob Williams', 'bob@employer.com', 'scrypt:32768:8:1$F6NCe7eMP5abRwer$8423b5f376da6cca62c01d9b54a61bf421723ca9aaa81321a8cefb916eca0bc72e1c90ade2876217b8095648ddad88ee588623e18c284156b4dd2c6419233246', 'employer');
 
 -- 2. Insert Dummy Companies
-INSERT INTO companies (company_id, name, website, description) VALUES
-(1, 'Google', 'https://google.com', 'Search engine, web advertisements, cloud computing, and hardware technologies.'),
-(2, 'Microsoft', 'https://microsoft.com', 'Global developer of computer software, consumer electronics, and personal computers.'),
-(3, 'Stripe', 'https://stripe.com', 'Financial infrastructure platform for payment processing APIs and business software.');
+INSERT INTO companies (company_id, user_id, name, website, description) VALUES
+(1, 4, 'Google', 'https://google.com', 'Search engine, web advertisements, cloud computing, and hardware technologies.'),
+(2, 4, 'Microsoft', 'https://microsoft.com', 'Global developer of computer software, consumer electronics, and personal computers.'),
+(3, 3, 'Stripe', 'https://stripe.com', 'Financial infrastructure platform for payment processing APIs and business software.');
 
 -- 3. Insert Dummy Job Listings
 INSERT INTO job_listings (job_id, company_id, title, description, location, salary, status) VALUES

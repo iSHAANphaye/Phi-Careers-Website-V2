@@ -45,8 +45,14 @@ def register():
         confirm_password = request.form.get('confirm_password', '')
         role = request.form.get('role', 'candidate').strip()
         
+        company_name = request.form.get('company_name', '').strip()
+        
         if not name or not email or not password or not confirm_password or role not in ['candidate', 'employer']:
             flash("All fields are required and role must be valid.", "error")
+            return redirect(url_for('auth.register'))
+            
+        if role == 'employer' and not company_name:
+            flash("Company name is required for employers.", "error")
             return redirect(url_for('auth.register'))
             
         if len(name) > 100:
@@ -55,6 +61,10 @@ def register():
             
         if len(email) > 100:
             flash("Email must be 100 characters or less.", "error")
+            return redirect(url_for('auth.register'))
+            
+        if role == 'employer' and len(company_name) > 150:
+            flash("Company name must be 150 characters or less.", "error")
             return redirect(url_for('auth.register'))
             
         if len(password.strip()) < 6:
@@ -81,10 +91,17 @@ def register():
         # Hash password and insert user safely using parameterized query
         pw_hash = generate_password_hash(password)
         try:
-            db_helper.execute_query(
+            new_user_id = db_helper.execute_query(
                 "INSERT INTO users (name, email, password_hash, role) VALUES (%s, %s, %s, %s)",
                 (name, email, pw_hash, role)
             )
+            
+            if role == 'employer':
+                db_helper.execute_query(
+                    "INSERT INTO companies (user_id, name) VALUES (%s, %s)",
+                    (new_user_id, company_name)
+                )
+                
             flash("Registration successful! Please log in.", "success")
             return redirect(url_for('auth.login'))
         except Exception as e:

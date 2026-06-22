@@ -3,6 +3,20 @@
 {% block title %}Employer Portal - Phi Careers{% endblock %}
 
 {% block content %}
+<div class="employer-header-banner" style="margin-bottom: 2rem; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.1); border-radius: 12px; padding: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+    <div>
+        <h2 style="margin: 0; font-size: 1.6rem; color: var(--text-primary);">Welcome, {{ user.name }}</h2>
+        <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.95rem;">
+            Managing jobs and applicants for <strong style="color: var(--accent-indigo);">{{ company.name }}</strong>
+        </p>
+    </div>
+    {% if company.website %}
+    <a href="{{ company.website }}" target="_blank" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem; border-color: rgba(99, 102, 241, 0.2); color: var(--text-primary);">
+        🌐 Visit Website
+    </a>
+    {% endif %}
+</div>
+
 <div class="dashboard-grid">
     
     <!-- Left Column: Manage Listings and New Job Post Form -->
